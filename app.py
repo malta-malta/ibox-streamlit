@@ -2,28 +2,27 @@ import streamlit as st
 import pandas as pd
 import duckdb
 import plotly.express as px
-import plotly.graph_objects as go
 import os
 
 # 1. Konfigurasi Halaman & Branding Apple Premium
 st.set_page_config(
-    page_title="iBox Retail Sales Analytics",
+    page_title="iBox Retail Analytics",
     page_icon="📱",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Apple Premium Dark Aesthetic Custom Styling (CSS)
+# Apple Premium Dark Aesthetic Styling (CSS)
 st.markdown("""
     <style>
-    /* Dark Background & Typography */
+    /* Dark Background & Apple Typography */
     .stApp {
         background-color: #000000;
         color: #f5f5f7;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
     }
     
-    /* Header Card Styling */
+    /* Executive Header Card */
     .apple-header {
         background: linear-gradient(135deg, #1c1c1e 0%, #0d0d0d 100%);
         border: 1px solid #2c2c2e;
@@ -38,17 +37,17 @@ st.markdown("""
         color: #ffffff;
         padding: 4px 12px;
         border-radius: 20px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         letter-spacing: 0.5px;
         text-transform: uppercase;
         display: inline-block;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }
 
     /* Metric Cards */
     div[data-testid="stMetricValue"] {
-        font-size: 26px !important;
+        font-size: 24px !important;
         font-weight: 700 !important;
         color: #f5f5f7 !important;
     }
@@ -57,16 +56,9 @@ st.markdown("""
         background-color: #1c1c1e;
         border: 1px solid #2c2c2e;
         border-radius: 14px;
-        padding: 18px;
-        transition: transform 0.2s ease, border-color 0.2s ease;
+        padding: 16px;
     }
     
-    div[data-testid="metric-container"]:hover {
-        border-color: #0071e3;
-        transform: translateY(-2px);
-    }
-    
-    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
         background-color: #161617;
         border-right: 1px solid #2c2c2e;
@@ -74,14 +66,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. Header Dashboard
+# 2. Executive Header Tampilan
 st.markdown("""
     <div class="apple-header">
         <span class="apple-badge">iBox Regional Executive Dashboard</span>
-        <h1 style="margin:0; font-size: 32px; font-weight: 700; color: #ffffff;">
+        <h1 style="margin:0; font-size: 30px; font-weight: 700; color: #ffffff;">
             📱 Retail Sales & Performance Analytics
         </h1>
-        <p style="margin: 6px 0 0 0; color: #86868b; font-size: 15px;">
+        <p style="margin: 6px 0 0 0; color: #86868b; font-size: 14px;">
             Real-time multi-store monitoring across Apple ecosystem categories (iPhone • Mac • iPad • Watch • Accessories)
         </p>
     </div>
@@ -96,7 +88,7 @@ data_source = None
 
 if uploaded_file is not None:
     data_source = uploaded_file
-    st.sidebar.success("✅ Menggunakan File Manual Upload")
+    st.sidebar.success("✅ File Manual Di-upload")
 elif os.path.exists("Data Dashboard.xlsx"):
     data_source = "Data Dashboard.xlsx"
     st.sidebar.info("📁 Dataset Bawaan: Data Dashboard.xlsx")
@@ -104,33 +96,29 @@ elif os.path.exists("Data Dashboard.xls"):
     data_source = "Data Dashboard.xls"
     st.sidebar.info("📁 Dataset Bawaan: Data Dashboard.xls")
 
-# 4. Fast Load with Caching & DuckDB
-@st.cache_data(ttl=3600, show_spinner=False)
+# 4. Fast Load dengan Calamine Engine & Caching
+@st.cache_data(ttl=3600, show_spinner="Memuat Dataset Excel...")
 def load_data_fast(source):
     try:
-        # Load Excel using calamine engine for max speed
         df = pd.read_excel(source, engine="calamine")
         df.columns = [str(c).strip() for c in df.columns]
         return df
     except Exception as e:
-        st.error(f"Error loading Excel file: {e}")
+        st.error(f"Error membaca file Excel: {e}")
         return None
 
 if data_source is not None:
-    with st.spinner("⚡ Processing Apple Retail Data..."):
-        raw_df = load_data_fast(data_source)
+    raw_df = load_data_fast(data_source)
         
     if raw_df is not None:
         duckdb.register("pos_data", raw_df)
         
-        # Detect Columns Dynamically
         cols = [c.lower() for c in raw_df.columns]
         
         # Sidebar Filters
         st.sidebar.markdown("---")
         st.sidebar.markdown("### 🔍 Filters")
         
-        # Determine store and category column names
         store_col = raw_df.columns[cols.index("store")] if "store" in cols else raw_df.columns[0]
         cat_col = raw_df.columns[cols.index("category")] if "category" in cols else (raw_df.columns[1] if len(raw_df.columns) > 1 else raw_df.columns[0])
         
@@ -151,7 +139,6 @@ if data_source is not None:
             
         where_clause = "WHERE " + " AND ".join(where_conditions)
         
-        # Detect numeric/revenue column
         rev_candidates = [c for c in raw_df.columns if "rev" in c.lower() or "sales" in c.lower() or "total" in c.lower() or "amount" in c.lower()]
         qty_candidates = [c for c in raw_df.columns if "qty" in c.lower() or "quantity" in c.lower() or "unit" in c.lower()]
         
@@ -164,20 +151,20 @@ if data_source is not None:
         total_rows = duckdb.query(f"SELECT COUNT(*) FROM pos_data {where_clause}").fetchone()[0] or 0
         
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("💰 Total Revenue", f"Rp {total_rev:,.0f}")
+        col1.metric("💰 Total Sales", f"Rp {total_rev:,.0f}")
         col2.metric("📦 Units Sold", f"{total_qty:,.0f} Pcs")
-        col3.metric("💻 Active Stores", f"{len(selected_stores)} Toko")
-        col4.metric("🧾 Total Records", f"{total_rows:,.0f} Rows")
+        col3.metric("🏪 Active Stores", f"{len(selected_stores)} Toko")
+        col4.metric("🧾 Total Rows", f"{total_rows:,.0f}")
         
         st.markdown("<br>", unsafe_allow_html=True)
         
         # 6. Visualizations
-        tab1, tab2, tab3 = st.tabs(["🏪 Store Ranking", "📱 Product Line Breakdown", "📄 Data Inspector"])
+        tab1, tab2, tab3 = st.tabs(["🏪 Store Ranking", "📱 Category Breakdown", "📄 Data Inspector"])
         
         with tab1:
-            st.markdown("#### 🏪 Store Revenue Performance")
+            st.markdown("#### 🏪 Kinerja Penjualan per Store")
             store_df = duckdb.query(f"""
-                SELECT "{store_col}" as Store, SUM(TRY_CAST("{rev_col}" AS DOUBLE)) as Revenue, SUM(TRY_CAST("{qty_col}" AS DOUBLE)) as Qty
+                SELECT "{store_col}" as Store, SUM(TRY_CAST("{rev_col}" AS DOUBLE)) as Revenue
                 FROM pos_data
                 {where_clause}
                 GROUP BY "{store_col}"
@@ -203,7 +190,7 @@ if data_source is not None:
             st.plotly_chart(fig_store, use_container_width=True)
             
         with tab2:
-            st.markdown("#### 📱 Category Revenue Share")
+            st.markdown("#### 📱 Proporsi Penjualan per Kategori Produk")
             cat_df = duckdb.query(f"""
                 SELECT "{cat_col}" as Category, SUM(TRY_CAST("{rev_col}" AS DOUBLE)) as Revenue
                 FROM pos_data
@@ -227,10 +214,9 @@ if data_source is not None:
             st.plotly_chart(fig_cat, use_container_width=True)
             
         with tab3:
-            st.markdown("#### 📄 Dataset View")
+            st.markdown("#### 📄 Inspection Data (First 300 Rows)")
             preview_df = duckdb.query(f"SELECT * FROM pos_data {where_clause} LIMIT 300").df()
             st.dataframe(preview_df, use_container_width=True)
             
 else:
-    st.warning("⚠️ File 'Data Dashboard.xlsx' belum ditemukan di folder proyek.")
-    st.info("Pastikan file 'Data Dashboard.xlsx' ada di folder proyek lalu jalankan perintah git push.")
+    st.warning("⚠️ File 'Data Dashboard.xlsx' belum terdeteksi.")
