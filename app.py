@@ -3,7 +3,7 @@ import pandas as pd
 import duckdb
 import os
 
-# 1. Konfigurasi Halaman & Design System Apple White
+# 1. Konfigurasi Halaman & Branding Apple Light Mode
 st.set_page_config(
     page_title="iBox Sales & Achievement Dashboard 2026",
     page_icon="📱",
@@ -19,8 +19,6 @@ st.markdown("""
         color: #1d1d1f;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
     }
-    
-    /* Header Container */
     .apple-header {
         background: #ffffff;
         border: 1px solid #d2d2d7;
@@ -32,8 +30,6 @@ st.markdown("""
         align-items: center;
         justify-content: space-between;
     }
-    
-    /* Sidebar Information Boxes */
     .info-box-green {
         background-color: #e8f5e9;
         border-left: 4px solid #2e7d32;
@@ -43,7 +39,6 @@ st.markdown("""
         font-size: 12px;
         color: #1b5e20;
     }
-    
     .info-box-blue {
         background-color: #e8eaf6;
         border-left: 4px solid #3f51b5;
@@ -53,14 +48,11 @@ st.markdown("""
         font-size: 12px;
         color: #1a237e;
     }
-    
-    /* Tab Navigation Style */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         border-bottom: 1px solid #d2d2d7;
         padding-bottom: 8px;
     }
-    
     .stTabs [data-baseweb="tab"] {
         background-color: #ffffff;
         border-radius: 8px;
@@ -70,21 +62,16 @@ st.markdown("""
         font-weight: 500;
         border: 1px solid #e5e5ea;
     }
-    
     .stTabs [aria-selected="true"] {
         background-color: #ffffff !important;
         color: #d32f2f !important;
         border-color: #d32f2f !important;
         font-weight: 700 !important;
     }
-    
-    /* Sidebar White Background */
     section[data-testid="stSidebar"] {
         background-color: #ffffff;
         border-right: 1px solid #e5e5ea;
     }
-    
-    /* Expander / Group Header Styling */
     .streamlit-expanderHeader {
         background-color: #ffffff !important;
         border-radius: 10px !important;
@@ -111,7 +98,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 3. Sidebar Controls & Instructions
+# 3. Sidebar
 st.sidebar.markdown("""
     <div class="info-box-green">
         📌 <b>Value memakai kolom:</b><br><code>total_nett_amount_exc_tax</code>
@@ -126,7 +113,7 @@ st.sidebar.markdown("""
 
 st.sidebar.markdown("### 🔍 Global Time Filters")
 
-uploaded_file = st.sidebar.file_uploader("Upload POS Data (Optional)", type=["xlsx", "xls", "parquet"])
+uploaded_file = st.sidebar.file_uploader("Upload POS Data (Optional)", type=["parquet", "xlsx", "xls"])
 
 data_source = None
 if uploaded_file is not None:
@@ -158,7 +145,6 @@ if data_source is not None:
         
         cols_map = {c.lower(): c for c in raw_df.columns}
         
-        date_col = cols_map.get("order date", cols_map.get("date", cols_map.get("order_date", None)))
         week_col = cols_map.get("week", None)
         month_col = cols_map.get("month", None)
         year_col = cols_map.get("year", None)
@@ -174,7 +160,6 @@ if data_source is not None:
         selected_months = st.sidebar.multiselect("MONTH", options=sorted(raw_df[month_col].dropna().unique()) if month_col else [], default=["September"] if month_col and "September" in raw_df[month_col].values else [])
         selected_years = st.sidebar.multiselect("YEAR", options=sorted(raw_df[year_col].dropna().unique()) if year_col else [])
         
-        # List kondisi filter
         where_conds = ["1=1"]
         if selected_weeks and week_col:
             w_str = "', '".join([str(x) for x in selected_weeks])
@@ -186,7 +171,6 @@ if data_source is not None:
             y_str = "', '".join([str(x) for x in selected_years])
             where_conds.append(f"\"{year_col}\" IN ('{y_str}')")
 
-        # 4. TAB NAVIGATION
         tab1, tab2, tab3, tab4 = st.tabs([
             "Tab 1: All Categories", 
             "Tab 2: ACC ROFO (Pivot AC)", 
@@ -197,14 +181,12 @@ if data_source is not None:
         def render_pivot_view(title, extra_cond=""):
             st.markdown(f"### {title}")
             
-            # Gabungkan kondisi dasar + ekstra filter tanpa menduplikasi kata WHERE
             current_conds = list(where_conds)
             if extra_cond:
                 current_conds.append(extra_cond)
             
             base_where_str = "WHERE " + " AND ".join(current_conds)
             
-            # Query TSH Unik
             tsh_query = f"SELECT DISTINCT \"{tsh_col}\" FROM pos_data {base_where_str} AND \"{tsh_col}\" IS NOT NULL"
             tsh_list = con.query(tsh_query).fetchall()
             
