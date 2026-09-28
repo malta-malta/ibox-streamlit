@@ -156,7 +156,6 @@ if data_source is not None:
         con = duckdb.connect(database=':memory:')
         con.register("pos_data", raw_df)
         
-        # Deteksi Kolom Tanggal/Waktu
         cols_map = {c.lower(): c for c in raw_df.columns}
         
         date_col = cols_map.get("order date", cols_map.get("date", cols_map.get("order_date", None)))
@@ -175,7 +174,7 @@ if data_source is not None:
         selected_months = st.sidebar.multiselect("MONTH", options=sorted(raw_df[month_col].dropna().unique()) if month_col else [], default=["September"] if month_col and "September" in raw_df[month_col].values else [])
         selected_years = st.sidebar.multiselect("YEAR", options=sorted(raw_df[year_col].dropna().unique()) if year_col else [])
         
-        # Build Filter Clause
+        # List kondisi filter
         where_conds = ["1=1"]
         if selected_weeks and week_col:
             w_str = "', '".join([str(x) for x in selected_weeks])
@@ -186,10 +185,8 @@ if data_source is not None:
         if selected_years and year_col:
             y_str = "', '".join([str(x) for x in selected_years])
             where_conds.append(f"\"{year_col}\" IN ('{y_str}')")
-            
-        where_clause = "WHERE " + " AND ".join(where_conds)
 
-        # 4. TAB NAVIGATION TEPAT SEPERTI SEMULA
+        # 4. TAB NAVIGATION
         tab1, tab2, tab3, tab4 = st.tabs([
             "Tab 1: All Categories", 
             "Tab 2: ACC ROFO (Pivot AC)", 
@@ -197,26 +194,30 @@ if data_source is not None:
             "Tab 4: Operator (Brand)"
         ])
 
-        def render_pivot_view(title, category_filter_clause=""):
+        def render_pivot_view(title, extra_cond=""):
             st.markdown(f"### {title}")
             
-            full_where = f"{where_clause} {category_filter_clause}"
+            # Gabungkan kondisi dasar + ekstra filter tanpa menduplikasi kata WHERE
+            current_conds = list(where_conds)
+            if extra_cond:
+                current_conds.append(extra_cond)
             
-            # Grouping berdasarkan TSH
-            tsh_list = con.query(f"SELECT DISTINCT \"{tsh_col}\" FROM pos_data {full_where} WHERE \"{tsh_col}\" IS NOT NULL").fetchall()
+            base_where_str = "WHERE " + " AND ".join(current_conds)
+            
+            # Query TSH Unik
+            tsh_query = f"SELECT DISTINCT \"{tsh_col}\" FROM pos_data {base_where_str} AND \"{tsh_col}\" IS NOT NULL"
+            tsh_list = con.query(tsh_query).fetchall()
             
             for tsh in tsh_list:
                 tsh_name = tsh[0]
-                tsh_where = f"{full_where} AND \"{tsh_col}\" = '{tsh_name}'"
+                tsh_where = f"{base_where_str} AND \"{tsh_col}\" = '{tsh_name}'"
                 
-                # Metric per TSH Header
                 total_tsh_qty = con.query(f"SELECT SUM(TRY_CAST(\"{qty_col}\" AS DOUBLE)) FROM pos_data {tsh_where}").fetchone()[0] or 0
                 total_tsh_val = con.query(f"SELECT SUM(TRY_CAST(\"{val_col}\" AS DOUBLE)) FROM pos_data {tsh_where}").fetchone()[0] or 0
                 
                 expander_label = f"👤 TSH: {tsh_name} | Total Qty: {total_tsh_qty:,.0f} | Total Value: Rp {total_tsh_val:,.0f}"
                 
                 with st.expander(expander_label, expanded=True):
-                    # Query Pivot per Store
                     pivot_df = con.query(f"""
                         SELECT 
                             "{store_col}" as Store,
@@ -234,7 +235,6 @@ if data_source is not None:
                     """).df()
                     
                     if not pivot_df.empty:
-                        # Add Total Row
                         total_row = pd.DataFrame([{
                             "Store": "TOTAL",
                             "3rd Party (Qty)": pivot_df["3rd Party (Qty)"].sum(),
@@ -248,7 +248,6 @@ if data_source is not None:
                         }])
                         pivot_df = pd.concat([pivot_df, total_row], ignore_index=True)
                         
-                        # Format Rupiah
                         pivot_df["3rd Party (Value)"] = pivot_df["3rd Party (Value)"].apply(lambda x: f"Rp {x:,.0f}")
                         pivot_df["Apple (Value)"] = pivot_df["Apple (Value)"].apply(lambda x: f"Rp {x:,.0f}")
                         
@@ -263,10 +262,10 @@ if data_source is not None:
             render_pivot_view("Data ACC ROFO Breakdown (Kolom AC)")
 
         with tab3:
-            render_pivot_view("Data Boltech Performance", category_filter_clause=f"AND \"{cat_col}\" LIKE '%Boltech%'")
+            render_pivot_view("Data Boltech Performance", extra_cond=f"\"{cat_col}\" LIKE '%Boltech%'")
 
         with tab4:
-            render_pivot_view("Data Operator (Brand) Performance", category_filter_clause=f"AND \"{cat_col}\" LIKE '%Operator%'")
+            render_pivot_view("Data Operator (Brand) Performance", extra_cond=f"\"{cat_col}\" LIKE '%Operator%'")
 
 else:
     st.warning("⚠️ File data belum terdeteksi. Silakan upload file Excel/Parquet di sidebar.")
