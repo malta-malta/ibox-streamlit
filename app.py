@@ -1,143 +1,142 @@
 import streamlit as st
 import pandas as pd
 import duckdb
-import plotly.express as px
 import os
 
-# 1. Konfigurasi Halaman & Branding Apple Light Mode
+# 1. Konfigurasi Halaman & Design System Apple White
 st.set_page_config(
-    page_title="iBox Retail Sales Analytics",
-    page_icon="🍎",
+    page_title="iBox Sales & Achievement Dashboard 2026",
+    page_icon="📱",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 2. Apple Light Mode & SF Pro Custom CSS
+# Custom Styling White Apple Clean Mode
 st.markdown("""
     <style>
-    /* Clean White Background & Official Apple Typography */
     .stApp {
         background-color: #f5f5f7;
         color: #1d1d1f;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
     }
     
-    /* Header Card Premium White */
-    .apple-header-card {
+    /* Header Container */
+    .apple-header {
         background: #ffffff;
         border: 1px solid #d2d2d7;
-        border-radius: 18px;
-        padding: 28px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.03);
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
     
-    .apple-badge {
-        background-color: #0071e3;
-        color: #ffffff;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        display: inline-block;
-        margin-bottom: 8px;
-    }
-
-    /* Metric Cards - Minimalist Apple Style */
-    div[data-testid="stMetricValue"] {
-        font-size: 26px !important;
-        font-weight: 700 !important;
-        color: #1d1d1f !important;
-        letter-spacing: -0.5px;
+    /* Sidebar Information Boxes */
+    .info-box-green {
+        background-color: #e8f5e9;
+        border-left: 4px solid #2e7d32;
+        padding: 10px 14px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: #1b5e20;
     }
     
-    div[data-testid="stMetricLabel"] {
-        color: #86868b !important;
-        font-weight: 500 !important;
-        font-size: 13px !important;
+    .info-box-blue {
+        background-color: #e8eaf6;
+        border-left: 4px solid #3f51b5;
+        padding: 10px 14px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: #1a237e;
     }
     
-    div[data-testid="metric-container"] {
+    /* Tab Navigation Style */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        border-bottom: 1px solid #d2d2d7;
+        padding-bottom: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
         background-color: #ffffff;
+        border-radius: 8px;
+        color: #1d1d1f;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
         border: 1px solid #e5e5ea;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
-        transition: all 0.2s ease-in-out;
     }
     
-    div[data-testid="metric-container"]:hover {
-        border-color: #0071e3;
-        box-shadow: 0 4px 16px rgba(0, 113, 227, 0.12);
-        transform: translateY(-2px);
+    .stTabs [aria-selected="true"] {
+        background-color: #ffffff !important;
+        color: #d32f2f !important;
+        border-color: #d32f2f !important;
+        font-weight: 700 !important;
     }
     
-    /* Sidebar Clean Styling */
+    /* Sidebar White Background */
     section[data-testid="stSidebar"] {
         background-color: #ffffff;
         border-right: 1px solid #e5e5ea;
     }
     
-    /* Custom Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background-color: #ffffff;
-        border-radius: 10px;
-        color: #1d1d1f;
-        padding: 8px 16px;
-        border: 1px solid #e5e5ea;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #0071e3 !important;
-        color: #ffffff !important;
-        border-color: #0071e3 !important;
+    /* Expander / Group Header Styling */
+    .streamlit-expanderHeader {
+        background-color: #ffffff !important;
+        border-radius: 10px !important;
+        border: 1px solid #e5e5ea !important;
+        font-weight: 600 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Header Dashboard dengan Logo Apple 3D
+# 2. Executive Header dengan Logo 3D
 st.markdown("""
-    <div class="apple-header-card">
-        <div style="flex-grow: 1;">
-            <span class="apple-badge">iBox Regional Executive Dashboard</span>
-            <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.8px;">
-                Retail Sales & Performance Analytics
+    <div class="apple-header">
+        <div>
+            <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.5px;">
+                📱 iBox Sales & Achievement Dashboard 2026
             </h1>
-            <p style="margin: 6px 0 0 0; color: #86868b; font-size: 15px; font-weight: 400;">
-                Real-time multi-store monitoring across Apple ecosystem categories (iPhone • Mac • iPad • Watch • Accessories)
+            <p style="margin: 4px 0 0 0; color: #86868b; font-size: 14px;">
+                Regional Store Performance & Multi-Category Sales Breakdown
             </p>
         </div>
-        <div style="margin-left: 20px;">
-            <img src="https://img.icons8.com/3d-fluency/94/apple-logo.png" width="70" alt="Apple 3D Logo" style="filter: drop-shadow(0px 8px 16px rgba(0,0,0,0.15));">
+        <div>
+            <img src="https://img.icons8.com/3d-fluency/94/apple-logo.png" width="65" alt="Apple 3D Logo">
         </div>
     </div>
 """, unsafe_allow_html=True)
 
-# 4. Sidebar Data Management
-st.sidebar.markdown("### ⚙️ Control Panel")
+# 3. Sidebar Controls & Instructions
+st.sidebar.markdown("""
+    <div class="info-box-green">
+        📌 <b>Value memakai kolom:</b><br><code>total_nett_amount_exc_tax</code>
+    </div>
+    <div class="info-box-blue">
+        📌 <b>Category memakai kolom:</b><br><code>CAT</code>
+    </div>
+    <div class="info-box-blue">
+        📌 <b>ACC ROFO memakai:</b><br><code>ACC ROFO</code>
+    </div>
+""", unsafe_allow_html=True)
 
-uploaded_file = st.sidebar.file_uploader("Upload Data POS (Opsional)", type=["xlsx", "xls", "parquet"])
+st.sidebar.markdown("### 🔍 Global Time Filters")
+
+uploaded_file = st.sidebar.file_uploader("Upload POS Data (Optional)", type=["xlsx", "xls", "parquet"])
 
 data_source = None
 if uploaded_file is not None:
     data_source = uploaded_file
-    st.sidebar.success("✅ File Manual Terdeteksi")
 elif os.path.exists("data_dashboard.parquet"):
     data_source = "data_dashboard.parquet"
-    st.sidebar.info("📁 Dataset Parquet (Ultra Fast)")
 elif os.path.exists("Data Dashboard.xlsx"):
     data_source = "Data Dashboard.xlsx"
-    st.sidebar.info("📁 Dataset: Data Dashboard.xlsx")
 
-# 5. Load Data Fast Function
-@st.cache_data(ttl=3600, show_spinner="Memproses data...")
+@st.cache_data(ttl=3600, show_spinner="Memuat Dataset Dashboard...")
 def load_data(source):
     try:
         if isinstance(source, str) and source.endswith(".parquet"):
@@ -147,7 +146,7 @@ def load_data(source):
         df.columns = [str(c).strip() for c in df.columns]
         return df
     except Exception as e:
-        st.error(f"Gagal memuat dataset: {e}")
+        st.error(f"Error membaca file data: {e}")
         return None
 
 if data_source is not None:
@@ -157,102 +156,117 @@ if data_source is not None:
         con = duckdb.connect(database=':memory:')
         con.register("pos_data", raw_df)
         
-        cols = [c.lower() for c in raw_df.columns]
+        # Deteksi Kolom Tanggal/Waktu
+        cols_map = {c.lower(): c for c in raw_df.columns}
         
-        # Sidebar Filters
-        st.sidebar.markdown("---")
-        st.sidebar.markdown("### 🔍 Filter Data")
+        date_col = cols_map.get("order date", cols_map.get("date", cols_map.get("order_date", None)))
+        week_col = cols_map.get("week", None)
+        month_col = cols_map.get("month", None)
+        year_col = cols_map.get("year", None)
+        tsh_col = cols_map.get("tsh", cols_map.get("tsh name", cols_map.get("tsh_name", raw_df.columns[0])))
+        store_col = cols_map.get("store", cols_map.get("store_name", raw_df.columns[1]))
+        val_col = cols_map.get("total_nett_amount_exc_tax", cols_map.get("value", raw_df.columns[-1]))
+        cat_col = cols_map.get("cat", cols_map.get("category", raw_df.columns[2]))
+        rofo_col = cols_map.get("acc rofo", cols_map.get("acc_rofo", cat_col))
+        qty_col = cols_map.get("qty", cols_map.get("quantity", "1"))
         
-        store_col = raw_df.columns[cols.index("store")] if "store" in cols else raw_df.columns[0]
-        cat_col = raw_df.columns[cols.index("category")] if "category" in cols else (raw_df.columns[1] if len(raw_df.columns) > 1 else raw_df.columns[0])
+        # Filters Sidebar UI
+        selected_weeks = st.sidebar.multiselect("WEEK", options=sorted(raw_df[week_col].dropna().unique()) if week_col else [])
+        selected_months = st.sidebar.multiselect("MONTH", options=sorted(raw_df[month_col].dropna().unique()) if month_col else [], default=["September"] if month_col and "September" in raw_df[month_col].values else [])
+        selected_years = st.sidebar.multiselect("YEAR", options=sorted(raw_df[year_col].dropna().unique()) if year_col else [])
         
-        stores = [r[0] for r in con.query(f"SELECT DISTINCT \"{store_col}\" FROM pos_data WHERE \"{store_col}\" IS NOT NULL").fetchall()]
-        categories = [r[0] for r in con.query(f"SELECT DISTINCT \"{cat_col}\" FROM pos_data WHERE \"{cat_col}\" IS NOT NULL").fetchall()]
-        
-        selected_stores = st.sidebar.multiselect("Pilih Store / Toko", options=stores, default=stores)
-        selected_categories = st.sidebar.multiselect("Pilih Kategori Produk", options=categories, default=categories)
-        
-        # SQL Where Conditions
-        where_conditions = ["1=1"]
-        if selected_stores:
-            s_list = "', '".join([str(s).replace("'", "''") for s in selected_stores])
-            where_conditions.append(f"\"{store_col}\" IN ('{s_list}')")
-        if selected_categories:
-            c_list = "', '".join([str(c).replace("'", "''") for c in selected_categories])
-            where_conditions.append(f"\"{cat_col}\" IN ('{c_list}')")
+        # Build Filter Clause
+        where_conds = ["1=1"]
+        if selected_weeks and week_col:
+            w_str = "', '".join([str(x) for x in selected_weeks])
+            where_conds.append(f"\"{week_col}\" IN ('{w_str}')")
+        if selected_months and month_col:
+            m_str = "', '".join([str(x) for x in selected_months])
+            where_conds.append(f"\"{month_col}\" IN ('{m_str}')")
+        if selected_years and year_col:
+            y_str = "', '".join([str(x) for x in selected_years])
+            where_conds.append(f"\"{year_col}\" IN ('{y_str}')")
             
-        where_clause = "WHERE " + " AND ".join(where_conditions)
-        
-        rev_candidates = [c for c in raw_df.columns if "rev" in c.lower() or "sales" in c.lower() or "total" in c.lower() or "amount" in c.lower()]
-        qty_candidates = [c for c in raw_df.columns if "qty" in c.lower() or "quantity" in c.lower() or "unit" in c.lower()]
-        
-        rev_col = rev_candidates[0] if rev_candidates else raw_df.columns[-1]
-        qty_col = qty_candidates[0] if qty_candidates else raw_df.columns[-2]
-        
-        # Executive KPI Cards
-        total_rev = con.query(f"SELECT SUM(TRY_CAST(\"{rev_col}\" AS DOUBLE)) FROM pos_data {where_clause}").fetchone()[0] or 0
-        total_qty = con.query(f"SELECT SUM(TRY_CAST(\"{qty_col}\" AS DOUBLE)) FROM pos_data {where_clause}").fetchone()[0] or 0
-        total_rows = con.query(f"SELECT COUNT(*) FROM pos_data {where_clause}").fetchone()[0] or 0
-        
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Revenue", f"Rp {total_rev:,.0f}")
-        col2.metric("Units Sold", f"{total_qty:,.0f} Pcs")
-        col3.metric("Active Stores", f"{len(selected_stores)} Toko")
-        col4.metric("Total Transaksi/Rows", f"{total_rows:,.0f}")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        # Apple Light Mode Clean Visualizations
-        tab1, tab2, tab3 = st.tabs(["🏪 Kinerja Store", "📱 Breakdown Kategori", "📄 Raw Data Inspector"])
-        
+        where_clause = "WHERE " + " AND ".join(where_conds)
+
+        # 4. TAB NAVIGATION TEPAT SEPERTI SEMULA
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "Tab 1: All Categories", 
+            "Tab 2: ACC ROFO (Pivot AC)", 
+            "Tab 3: Boltech", 
+            "Tab 4: Operator (Brand)"
+        ])
+
+        def render_pivot_view(title, category_filter_clause=""):
+            st.markdown(f"### {title}")
+            
+            full_where = f"{where_clause} {category_filter_clause}"
+            
+            # Grouping berdasarkan TSH
+            tsh_list = con.query(f"SELECT DISTINCT \"{tsh_col}\" FROM pos_data {full_where} WHERE \"{tsh_col}\" IS NOT NULL").fetchall()
+            
+            for tsh in tsh_list:
+                tsh_name = tsh[0]
+                tsh_where = f"{full_where} AND \"{tsh_col}\" = '{tsh_name}'"
+                
+                # Metric per TSH Header
+                total_tsh_qty = con.query(f"SELECT SUM(TRY_CAST(\"{qty_col}\" AS DOUBLE)) FROM pos_data {tsh_where}").fetchone()[0] or 0
+                total_tsh_val = con.query(f"SELECT SUM(TRY_CAST(\"{val_col}\" AS DOUBLE)) FROM pos_data {tsh_where}").fetchone()[0] or 0
+                
+                expander_label = f"👤 TSH: {tsh_name} | Total Qty: {total_tsh_qty:,.0f} | Total Value: Rp {total_tsh_val:,.0f}"
+                
+                with st.expander(expander_label, expanded=True):
+                    # Query Pivot per Store
+                    pivot_df = con.query(f"""
+                        SELECT 
+                            "{store_col}" as Store,
+                            SUM(CASE WHEN "{rofo_col}" LIKE '%3rd Party%' THEN TRY_CAST("{qty_col}" AS DOUBLE) ELSE 0 END) as "3rd Party (Qty)",
+                            SUM(CASE WHEN "{rofo_col}" LIKE '%Apple%' THEN TRY_CAST("{qty_col}" AS DOUBLE) ELSE 0 END) as "Apple (Qty)",
+                            SUM(CASE WHEN "{rofo_col}" LIKE '%Boltech%' THEN TRY_CAST("{qty_col}" AS DOUBLE) ELSE 0 END) as "Boltech (Qty)",
+                            SUM(CASE WHEN "{rofo_col}" LIKE '%Lifestyle%' THEN TRY_CAST("{qty_col}" AS DOUBLE) ELSE 0 END) as "Lifestyle (Qty)",
+                            SUM(CASE WHEN "{rofo_col}" LIKE '%Operator%' THEN TRY_CAST("{qty_col}" AS DOUBLE) ELSE 0 END) as "Operator (Qty)",
+                            SUM(CASE WHEN "{rofo_col}" LIKE '%Private Label%' THEN TRY_CAST("{qty_col}" AS DOUBLE) ELSE 0 END) as "Private Label (Qty)",
+                            SUM(CASE WHEN "{rofo_col}" LIKE '%3rd Party%' THEN TRY_CAST("{val_col}" AS DOUBLE) ELSE 0 END) as "3rd Party (Value)",
+                            SUM(CASE WHEN "{rofo_col}" LIKE '%Apple%' THEN TRY_CAST("{val_col}" AS DOUBLE) ELSE 0 END) as "Apple (Value)"
+                        FROM pos_data
+                        {tsh_where}
+                        GROUP BY "{store_col}"
+                    """).df()
+                    
+                    if not pivot_df.empty:
+                        # Add Total Row
+                        total_row = pd.DataFrame([{
+                            "Store": "TOTAL",
+                            "3rd Party (Qty)": pivot_df["3rd Party (Qty)"].sum(),
+                            "Apple (Qty)": pivot_df["Apple (Qty)"].sum(),
+                            "Boltech (Qty)": pivot_df["Boltech (Qty)"].sum(),
+                            "Lifestyle (Qty)": pivot_df["Lifestyle (Qty)"].sum(),
+                            "Operator (Qty)": pivot_df["Operator (Qty)"].sum(),
+                            "Private Label (Qty)": pivot_df["Private Label (Qty)"].sum(),
+                            "3rd Party (Value)": pivot_df["3rd Party (Value)"].sum(),
+                            "Apple (Value)": pivot_df["Apple (Value)"].sum(),
+                        }])
+                        pivot_df = pd.concat([pivot_df, total_row], ignore_index=True)
+                        
+                        # Format Rupiah
+                        pivot_df["3rd Party (Value)"] = pivot_df["3rd Party (Value)"].apply(lambda x: f"Rp {x:,.0f}")
+                        pivot_df["Apple (Value)"] = pivot_df["Apple (Value)"].apply(lambda x: f"Rp {x:,.0f}")
+                        
+                        st.dataframe(pivot_df, use_container_width=True)
+                    else:
+                        st.info("Tidak ada data untuk TSH ini.")
+
         with tab1:
-            st.markdown("<h4 style='color: #1d1d1f; font-weight: 600;'>Kinerja Penjualan per Store</h4>", unsafe_allow_html=True)
-            store_df = con.query(f"""
-                SELECT "{store_col}" as Store, SUM(TRY_CAST("{rev_col}" AS DOUBLE)) as Revenue
-                FROM pos_data
-                {where_clause}
-                GROUP BY "{store_col}"
-                ORDER BY Revenue DESC
-            """).df()
-            
-            fig_store = px.bar(
-                store_df, x="Store", y="Revenue", text_auto=".2s",
-                color="Revenue", color_continuous_scale=["#e5e5ea", "#0071e3", "#003666"],
-                template="plotly_white"
-            )
-            fig_store.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", 
-                plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="-apple-system, sans-serif", color="#1d1d1f"),
-                xaxis=dict(showgrid=False),
-                yaxis=dict(showgrid=True, gridcolor="#e5e5ea")
-            )
-            st.plotly_chart(fig_store, use_container_width=True)
-            
+            render_pivot_view("Data All Categories Breakdown")
+
         with tab2:
-            st.markdown("<h4 style='color: #1d1d1f; font-weight: 600;'>Proporsi Penjualan Kategori Produk</h4>", unsafe_allow_html=True)
-            cat_df = con.query(f"""
-                SELECT "{cat_col}" as Category, SUM(TRY_CAST("{rev_col}" AS DOUBLE)) as Revenue
-                FROM pos_data
-                {where_clause}
-                GROUP BY "{cat_col}"
-                ORDER BY Revenue DESC
-            """).df()
-            
-            fig_cat = px.pie(
-                cat_df, names="Category", values="Revenue", hole=0.55,
-                color_discrete_sequence=["#0071e3", "#34c759", "#ff9500", "#af52de", "#5856d6", "#ff2d55"],
-                template="plotly_white"
-            )
-            fig_cat.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(family="-apple-system, sans-serif", color="#1d1d1f")
-            )
-            st.plotly_chart(fig_cat, use_container_width=True)
-            
+            render_pivot_view("Data ACC ROFO Breakdown (Kolom AC)")
+
         with tab3:
-            st.markdown("<h4 style='color: #1d1d1f; font-weight: 600;'>Data Inspector (Pratinjau 200 Baris Pertama)</h4>", unsafe_allow_html=True)
-            preview_df = con.query(f"SELECT * FROM pos_data {where_clause} LIMIT 200").df()
-            st.dataframe(preview_df, use_container_width=True)
+            render_pivot_view("Data Boltech Performance", category_filter_clause=f"AND \"{cat_col}\" LIKE '%Boltech%'")
+
+        with tab4:
+            render_pivot_view("Data Operator (Brand) Performance", category_filter_clause=f"AND \"{cat_col}\" LIKE '%Operator%'")
+
 else:
-    st.warning("⚠️ Dataset belum terdeteksi.")
+    st.warning("⚠️ File data belum terdeteksi. Silakan upload file Excel/Parquet di sidebar.")
